@@ -243,10 +243,13 @@ jobs:
           app="$(find "$mount_dir" -maxdepth 1 -type d -name '*.app' -print -quit)"
           test -n "$app"
           ditto "$app" "$install_dir/Pakitup.app"
-          test -f "$install_dir/Pakitup.app/Contents/Info.plist"
-          executable="$install_dir/Pakitup.app/Contents/MacOS/Pakitup"
+          plist="$install_dir/Pakitup.app/Contents/Info.plist"
+          test -f "$plist"
+          executable_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")"
+          test -n "$executable_name"
+          executable="$install_dir/Pakitup.app/Contents/MacOS/$executable_name"
           test -x "$executable"
-          plutil -lint "$install_dir/Pakitup.app/Contents/Info.plist"
+          plutil -lint "$plist"
           if [[ '${{ matrix.platform }}' == 'macos-aarch64' ]]; then
             file "$executable" | grep -q 'arm64'
           else

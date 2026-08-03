@@ -182,4 +182,8 @@ devices. Desktop support targets Windows, macOS, and Linux.
       runners; structurally extract the Linux AppImage; verify installed
       executables and architecture; then require every platform bundle plus the
       exact 10-asset validator to pass at the current `main` SHA. No tag or
-      public GitHub Release may be created by this manual preflight.
+      public GitHub Release may be created by this manual preflight. The first
+      run correctly rejected the macOS bundle check because the workflow
+      assumed the display name was also the binary name; Tauri emitted the
+      actual `CFBundleExecutable` as `app`. Resolve the executable from the
+      copied bundle's `Info.plist` before checking its mode and architecture.
