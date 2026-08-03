@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "pakitup",
+  "productName": "Pakitup",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.pakitup.desktop",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:3001",
-    "beforeDevCommand": "pnpm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm run dev:desktop",
     "beforeBuildCommand": "pnpm run build"
   },
   "app": {
     "windows": [
       {
-        "title": "pakitup",
+        "title": "Pakitup",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -20,7 +20,15 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost https:; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'",
+      "devCsp": "default-src 'self' http://localhost:1420; connect-src 'self' ipc: http://ipc.localhost http://localhost:3000 http://localhost:3001 http://localhost:1420 ws://localhost:1420; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' http://localhost:1420"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["pakitup"]
+      }
     }
   },
   "bundle": {

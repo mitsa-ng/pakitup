@@ -5,13 +5,17 @@
 	"type": "module",
 	"scripts": {
 		"build": "vite build",
+		"build:local-preview": "node scripts/build-local-preview.mjs",
 		"serve": "vite preview",
 		"start": "vite",
 		"check-types": "vite build && tsc --noEmit",
+		"test": "bun test src/lib/desktop-handoff.test.mjs src/lib/install-presentation.test.mjs src/utils/orpc.test.mjs",
 		"dev:bare": "vite dev",
+		"dev:desktop": "vite dev --host 127.0.0.1 --port 1420 --strictPort",
 		"tauri": "tauri",
 		"desktop:dev": "tauri dev",
-		"desktop:build": "tauri build"
+		"desktop:build": "tauri build",
+		"desktop:build:local": "tauri build --config src-tauri/tauri.local.conf.json"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.5.7",
@@ -24,6 +28,7 @@
 		"@tailwindcss/vite": "^4.3.3",
 		"@tanstack/react-query": "^5.101.4",
 		"@tanstack/react-router": "^1.170.18",
+		"@tauri-apps/api": "^2.11.1",
 		"dotenv": "catalog:",
 		"lucide-react": "catalog:",
 		"next-themes": "catalog:",

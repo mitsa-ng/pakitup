@@ -9,7 +9,10 @@
 			"default": "./src/*.ts"
 		}
 	},
-	"scripts": {},
+	"scripts": {
+		"check-types": "tsc -b",
+		"test": "bun test"
+	},
 	"dependencies": {
 		"@orpc/client": "catalog:",
 		"@orpc/openapi": "catalog:",

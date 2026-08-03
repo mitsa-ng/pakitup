@@ -1,20 +1,27 @@
-import { createORPCClient } from "@orpc/client";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { AppRouterClient } from "@pakitup/api/routers/index";
 import { Toaster } from "@pakitup/ui/components/sonner";
 import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
+	useNavigate,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useState } from "react";
+import { useEffect } from "react";
 
 import Header from "@/components/header";
+import { SiteFooter } from "@/components/site-footer";
 import { ThemeProvider } from "@/components/theme-provider";
-import { link, type orpc } from "@/utils/orpc";
+import {
+	isTauriRuntime,
+	listenToProfileOpen,
+	takePendingProfile,
+} from "@/lib/desktop-client";
+import {
+	consumePendingHandoffBatch,
+	createPendingHandoffDrain,
+	isProfileSlug,
+} from "@/lib/desktop-handoff";
+import type { orpc } from "@/utils/orpc";
 
 import "../index.css";
 
@@ -28,11 +35,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
 			{
-				title: "pakitup",
+				title: "Pakitup — install the useful things",
 			},
 			{
 				name: "description",
-				content: "pakitup is a web application",
+				content:
+					"Build a trusted, shareable software setup and review every step before installation.",
 			},
 		],
 		links: [
@@ -45,26 +53,68 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
-	const [client] = useState<AppRouterClient>(() => createORPCClient(link));
-	const [orpcUtils] = useState(() => createTanstackQueryUtils(client));
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		if (!isTauriRuntime()) return;
+
+		let disposed = false;
+		let unlisten: (() => void) | null = null;
+
+		const drain = createPendingHandoffDrain(
+			() =>
+				consumePendingHandoffBatch(takePendingProfile, async (slug) => {
+					if (disposed || !isProfileSlug(slug)) return;
+					await navigate({ to: "/p/$slug", params: { slug } });
+				}),
+			queueMicrotask,
+			() => {
+				// Desktop environment detection surfaces unavailable IPC separately.
+			},
+		);
+
+		void listenToProfileOpen(() => {
+			drain.request();
+		})
+			.then((cleanup) => {
+				if (disposed) {
+					cleanup();
+					return;
+				}
+				unlisten = cleanup;
+				drain.request();
+			})
+			.catch(() => {
+				// Desktop environment detection will surface unavailable IPC separately.
+			});
+
+		return () => {
+			disposed = true;
+			drain.dispose();
+			unlisten?.();
+		};
+	}, [navigate]);
 
 	return (
 		<>
 			<HeadContent />
 			<ThemeProvider
 				attribute="class"
-				defaultTheme="dark"
-				disableTransitionOnChange
+				defaultTheme="system"
 				storageKey="vite-ui-theme"
 			>
-				<div className="grid h-svh grid-rows-[auto_1fr]">
+				<a className="skip-link" href="#main-content">
+					Skip to content
+				</a>
+				<div className="site-shell">
 					<Header />
-					<Outlet />
+					<main id="main-content" tabIndex={-1}>
+						<Outlet />
+					</main>
+					<SiteFooter />
 				</div>
-				<Toaster richColors />
+				<Toaster richColors position="bottom-center" />
 			</ThemeProvider>
-			<TanStackRouterDevtools position="bottom-left" />
-			<ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
 		</>
 	);
 }

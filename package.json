@@ -18,7 +18,11 @@
 		"db:migrate": "turbo run db:migrate -F @pakitup/db",
 		"deploy": "turbo run deploy -F @pakitup/infra",
 		"destroy": "turbo run destroy -F @pakitup/infra",
-		"check": "biome check --write ."
+		"check": "biome check .",
+		"format": "biome check --write .",
+		"test": "pnpm -r --if-present run test && cargo test --manifest-path apps/web/src-tauri/Cargo.toml",
+		"verify": "pnpm run check-types && pnpm run check && pnpm run test && pnpm run build",
+		"release:validate-api-url": "node --test docs/release/validate-production-api-url.test.mjs"
 	},
 	"dependencies": {
 		"@pakitup/env": "workspace:*",

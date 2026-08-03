@@ -5,6 +5,7 @@ import type * as React from "react";
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {
 	return (
+		// biome-ignore lint/a11y/noLabelWithoutControl: Reusable label receives htmlFor or wraps its control at the call site.
 		<label
 			data-slot="label"
 			className={cn(

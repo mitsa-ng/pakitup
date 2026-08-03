@@ -60,10 +60,83 @@ devices. Desktop support targets Windows, macOS, and Linux.
 
 ## Progress
 
+- [ ] 2026-08-03 scope clarification: the core v1 journey must continue from a
+      web-selected profile into the Tauri client and let the user review,
+      confirm, and execute installation of those catalog apps. A browser-only
+      dry-run is not an acceptable final journey.
 - [x] 2026-08-03: Product boundary research completed.
 - [x] 2026-08-03: Stack and deployment targets fixed.
 - [x] 2026-08-03: Workspace permission restored and current directory audited.
-- [ ] Scaffold generated and reviewed.
-- [ ] Product implementation complete.
+- [x] 2026-08-03: Better-T-Stack dry-run validated, scaffold generated,
+      dependencies installed, and initial production build completed.
+- [x] 2026-08-03: GitHub CLI, Cloudflare OAuth, and Neon access verified; empty
+      Neon project `late-grass-35738043` created for production integration.
+- [x] 2026-08-03: Catalog, profile/share, dry-run plan, Android disclosure,
+      allowlisted Tauri executors, release workflow, and API rate limiting built.
+- [x] 2026-08-03: Browser E2E passed against the temporary Neon migration branch:
+      10-app catalog, three-app profile creation, stable direct share URL, macOS
+      plan generation, Android route, exact-origin CORS, and zero console errors.
+- [x] 2026-08-03: Added the missing Ninite-style handoff. Browser profiles now
+      expose `Install these apps` through a host-only `pakitup://<profile-slug>`
+      deep link; Tauri handles cold/warm requests with a bounded FIFO and
+      remounts the executor for every profile so plans/tokens cannot cross over.
+- [x] 2026-08-03: Handoff regressions passed (5 Web tests, 25 Rust tests), full
+      verify and Clippy passed, macOS bundle registered the `pakitup` scheme,
+      and independent review found no remaining high/medium issues. No package
+      installation was executed; installed-bundle protocol E2E remains pending.
+- [x] 2026-08-04 native catalog remediation: the separate `Pakitup Local
+      Preview` flavor permits only `http://localhost:3001`, the API accepts a
+      validated exact-origin list for browser/Tauri clients, and RPC requests
+      fail after 15 seconds instead of loading forever. The rebuilt mounted app
+      loaded all 10 catalog entries, opened the existing three-app shared
+      profile through `pakitup://`, and generated three exact Homebrew steps.
+      The confirmation checkbox remained clear and installation stayed
+      disabled. Server 9/9, Web 7/7, typecheck, Biome, and diff-check passed.
+      A fresh-context review found and closed a local build URL mismatch: the
+      preview build now injects port 3001 independently of the caller's shell
+      or default `.env`. Final DMG SHA-256:
+      `2ccf2787c2adf1916760053d09b1261a4261aa6be269dedb09ed59ee70163507`.
+      The formal release still requires the deployed HTTPS Worker origin and a
+      CSP narrowed to that exact origin.
+- [x] 2026-08-04 install-result UX hardening: use the verified sevenzip run as
+      the fixture for distinguishing real step progress from Homebrew metadata
+      noise, suppress empty output events, identify CLI mappings before
+      confirmation, and present a concise installed-version/path/result summary
+      with the complete raw log still available. Verification must not execute
+      another package-manager install. Completed with lifecycle milestones,
+      collapsed sanitized raw output, package-kind and launch-hint metadata,
+      and 10 passing Web tests.
+- [x] 2026-08-04 install-policy closure: native smoke confirmed that rebuilding
+      an `install-missing` profile after sevenzip succeeded still produced one
+      executable Homebrew step. Carry the profile policy into the local planner,
+      use only allowlisted provider-specific read-only presence checks, report
+      installed apps as skipped/nothing-to-do, and prove the rebuilt sevenzip
+      plan cannot execute another install. The rebuilt mounted app reported
+      `0 executable steps`, `0 unsupported`, and `1 already installed`; both
+      consent and install controls remained disabled. No install, update, or
+      upgrade command ran during verification. Local Preview DMG SHA-256:
+      `b102172d4b967310a8598f2e5583a4bc609541c9ca02a0df5a1d4b4df58c1830`.
+- [x] 2026-08-04 presence hardening: review identified that provider command
+      failures and probe failures must remain Unknown rather than be treated as
+      Missing, Flatpak must inspect both user and system scopes, and execution
+      must re-check presence immediately before each install-missing step. The
+      builder must stop offering install-and-upgrade until an explicit upgrade
+      implementation exists. Acceptance requires regression tests and no
+      package-manager mutation during verification. Implemented with 41 Rust
+      tests, Web typecheck/tests, targeted Biome, and diff-check passing.
+- [x] 2026-08-04 provider trust closure: final review requires a pinned official
+      Flathub remote identity, DNF non-empty mismatch fail-closed behavior,
+      redacted UI-facing probe errors, and a trusted absolute WinGet resolver
+      rather than PATH lookup. Acceptance requires regression tests and no
+      package-manager mutation during verification.
+      Implemented with 43 Rust tests, Web typecheck/tests, targeted Biome, and
+      diff-check passing. WinGet stays intentionally fail-closed pending a
+      Windows Known Folder API resolver; Windows cross-compilation was not
+      available on this macOS host.
+- [ ] Product implementation complete (production URLs, CSP, and README remain).
+- [x] 2026-08-04 release CI hardening: the tag workflow now has one Linux
+      workspace verify/Clippy gate, validates the repository `VITE_SERVER_URL`,
+      and derives a release-only exact-origin Tauri CSP override for every
+      platform build. Pending the configured production variable at tag time.
 - [ ] Verification complete.
 - [ ] Public deployment and GitHub Release complete.

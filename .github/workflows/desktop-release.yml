@@ -1,0 +1,183 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-version:
+    name: Verify release version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Match tag and application versions
+        run: >-
+          node docs/release/verify-version.mjs
+          "$GITHUB_REF_NAME"
+          apps/web/src-tauri/Cargo.toml
+          apps/web/src-tauri/tauri.conf.json
+
+  verify:
+    name: Verify release gate
+    needs: verify-version
+    runs-on: ubuntu-latest
+    env:
+      VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate production API URL
+        run: node docs/release/validate-production-api-url.mjs
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run production API URL validator fixtures
+        run: pnpm release:validate-api-url
+
+      - name: Run workspace verification
+        run: pnpm verify
+
+      - name: Use stable Rust
+        run: rustup default stable
+
+      - name: Run Rust lint gate
+        run: >-
+          cargo clippy --manifest-path apps/web/src-tauri/Cargo.toml
+          --locked --all-targets -- -D warnings
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: [verify-version, verify]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-22.04
+            bundles: deb,appimage
+          - platform: macos
+            os: macos-latest
+            bundles: dmg
+          - platform: windows
+            os: windows-latest
+            bundles: nsis,msi
+    runs-on: ${{ matrix.os }}
+    env:
+      VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate production API URL and create exact CSP config
+        run: >-
+          node docs/release/validate-production-api-url.mjs
+          --config apps/web/src-tauri/tauri.release.conf.json
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Use stable Rust
+        run: rustup default stable
+
+      - name: Run Rust tests
+        working-directory: apps/web/src-tauri
+        run: cargo test --locked --all-targets
+
+      - name: Build Tauri bundles
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: apps/web
+          args: --config src-tauri/tauri.release.conf.json --bundles ${{ matrix.bundles }}
+
+      - name: Stage bundles and checksums
+        run: >-
+          node docs/release/generate-checksums.mjs
+          apps/web/src-tauri/target/release/bundle
+          release-assets
+          ${{ matrix.platform }}
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-desktop-bundles
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 14
+
+  draft-release:
+    name: Create draft release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all desktop bundles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-desktop-bundles"
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mapfile -d '' assets < <(find release-assets -type f -print0)
+          test "${#assets[@]}" -gt 0
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            is_draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)
+            if [[ "$is_draft" != "true" ]]; then
+              echo "refusing to upload assets to non-draft release $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --draft \
+              --generate-notes \
+              --title "Pakitup $GITHUB_REF_NAME" \
+              --verify-tag
+          fi

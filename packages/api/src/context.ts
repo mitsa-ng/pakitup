@@ -1,13 +1,18 @@
-import type { Context as HonoContext } from "hono";
+import { createDb } from "@pakitup/db";
 
 export type CreateContextOptions = {
-	context: HonoContext;
+	databaseUrl: string;
+	profileCreateRateLimit: {
+		limit(options: { key: string }): Promise<{ success: boolean }>;
+	};
+	profileCreateRateLimitKey: string;
 };
 
-export async function createContext(_options: CreateContextOptions) {
+export function createContext(options: CreateContextOptions) {
 	return {
-		auth: null,
-		session: null,
+		db: createDb(options.databaseUrl),
+		profileCreateRateLimit: options.profileCreateRateLimit,
+		profileCreateRateLimitKey: options.profileCreateRateLimitKey,
 	};
 }
 

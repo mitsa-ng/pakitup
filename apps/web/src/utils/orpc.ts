@@ -25,6 +25,58 @@ export function createQueryClient() {
 
 export const queryClient = createQueryClient();
 
+export const DEFAULT_RPC_TIMEOUT_MS = 15_000;
+
+type FetchImplementation = (
+	request: Request,
+	init?: RequestInit,
+) => Promise<Response>;
+
+/**
+ * Adds a bounded failure mode to API requests without dropping a caller's
+ * cancellation signal. This keeps a blocked desktop CSP/network request from
+ * leaving the catalog in a permanent loading state.
+ */
+export function createTimedFetch(
+	fetchImplementation: FetchImplementation = globalThis.fetch.bind(globalThis),
+	timeoutMs = DEFAULT_RPC_TIMEOUT_MS,
+): FetchImplementation {
+	return async (request, init) => {
+		const callerSignal = init?.signal ?? request.signal;
+		const controller = new AbortController();
+		let timedOut = false;
+		const relayCallerAbort = () => controller.abort(callerSignal?.reason);
+
+		if (callerSignal?.aborted) relayCallerAbort();
+		else
+			callerSignal?.addEventListener("abort", relayCallerAbort, { once: true });
+
+		const timeout = setTimeout(() => {
+			timedOut = true;
+			controller.abort(
+				new DOMException("The API request timed out", "TimeoutError"),
+			);
+		}, timeoutMs);
+
+		try {
+			return await fetchImplementation(request, {
+				...init,
+				signal: controller.signal,
+			});
+		} catch (error) {
+			if (timedOut) {
+				throw new Error(`Pakitup API request timed out after ${timeoutMs}ms`, {
+					cause: error,
+				});
+			}
+			throw error;
+		} finally {
+			clearTimeout(timeout);
+			callerSignal?.removeEventListener("abort", relayCallerAbort);
+		}
+	};
+}
+
 function getServerUrl(url: string) {
 	const normalized = url.endsWith("/") ? url.slice(0, -1) : url;
 
@@ -56,6 +108,7 @@ function getServerUrl(url: string) {
 }
 export const link = new RPCLink({
 	url: `${getServerUrl(env.VITE_SERVER_URL)}/rpc`,
+	fetch: createTimedFetch(),
 });
 
 export const client: AppRouterClient = createORPCClient(link);

@@ -10,6 +10,7 @@ build
 
 # Generated files
 apps/web/src/routeTree.gen.ts
+apps/web/src-tauri/tauri.release.conf.json
 
 # Environment variables
 .env
@@ -51,6 +52,7 @@ coverage
 
 # Misc
 *.tgz
+*.bak-*
 .cache
 tmp
 temp

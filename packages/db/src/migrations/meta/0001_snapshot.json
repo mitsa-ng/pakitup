@@ -1,0 +1,399 @@
+{
+	"id": "33211c10-d890-4182-88f8-f1793976a36b",
+	"prevId": "ce68086a-af88-45c0-adbb-aaae190b5894",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {
+		"public.app_providers": {
+			"name": "app_providers",
+			"schema": "",
+			"columns": {
+				"app_id": {
+					"name": "app_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"platform": {
+					"name": "platform",
+					"type": "platform",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"provider": {
+					"name": "provider",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"package_id": {
+					"name": "package_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				}
+			},
+			"indexes": {
+				"app_providers_platform_idx": {
+					"name": "app_providers_platform_idx",
+					"columns": [
+						{
+							"expression": "platform",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"with": {},
+					"method": "btree",
+					"concurrently": false
+				}
+			},
+			"foreignKeys": {
+				"app_providers_app_id_catalog_apps_id_fk": {
+					"name": "app_providers_app_id_catalog_apps_id_fk",
+					"tableFrom": "app_providers",
+					"columnsFrom": ["app_id"],
+					"tableTo": "catalog_apps",
+					"columnsTo": ["id"],
+					"onUpdate": "no action",
+					"onDelete": "cascade"
+				}
+			},
+			"compositePrimaryKeys": {
+				"app_providers_app_id_platform_pk": {
+					"name": "app_providers_app_id_platform_pk",
+					"columns": ["app_id", "platform"]
+				}
+			},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {
+				"app_providers_provider_length": {
+					"name": "app_providers_provider_length",
+					"value": "char_length(\"app_providers\".\"provider\") BETWEEN 1 AND 40"
+				},
+				"app_providers_package_id_length": {
+					"name": "app_providers_package_id_length",
+					"value": "char_length(\"app_providers\".\"package_id\") BETWEEN 1 AND 200"
+				}
+			},
+			"isRLSEnabled": false
+		},
+		"public.catalog_apps": {
+			"name": "catalog_apps",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"slug": {
+					"name": "slug",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"category": {
+					"name": "category",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"publisher": {
+					"name": "publisher",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"homepage": {
+					"name": "homepage",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"source_url": {
+					"name": "source_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"icon_url": {
+					"name": "icon_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"catalog_apps_slug_key": {
+					"name": "catalog_apps_slug_key",
+					"columns": [
+						{
+							"expression": "slug",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"with": {},
+					"method": "btree",
+					"concurrently": false
+				},
+				"catalog_apps_category_idx": {
+					"name": "catalog_apps_category_idx",
+					"columns": [
+						{
+							"expression": "category",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"with": {},
+					"method": "btree",
+					"concurrently": false
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {
+				"catalog_apps_id_format": {
+					"name": "catalog_apps_id_format",
+					"value": "\"catalog_apps\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+				},
+				"catalog_apps_slug_format": {
+					"name": "catalog_apps_slug_format",
+					"value": "\"catalog_apps\".\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+				},
+				"catalog_apps_name_length": {
+					"name": "catalog_apps_name_length",
+					"value": "char_length(\"catalog_apps\".\"name\") BETWEEN 1 AND 100"
+				},
+				"catalog_apps_description_length": {
+					"name": "catalog_apps_description_length",
+					"value": "char_length(\"catalog_apps\".\"description\") BETWEEN 1 AND 1000"
+				}
+			},
+			"isRLSEnabled": false
+		},
+		"public.profile_apps": {
+			"name": "profile_apps",
+			"schema": "",
+			"columns": {
+				"profile_id": {
+					"name": "profile_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"app_id": {
+					"name": "app_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"position": {
+					"name": "position",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true
+				}
+			},
+			"indexes": {
+				"profile_apps_profile_position_key": {
+					"name": "profile_apps_profile_position_key",
+					"columns": [
+						{
+							"expression": "profile_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "position",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"with": {},
+					"method": "btree",
+					"concurrently": false
+				}
+			},
+			"foreignKeys": {
+				"profile_apps_profile_id_profiles_id_fk": {
+					"name": "profile_apps_profile_id_profiles_id_fk",
+					"tableFrom": "profile_apps",
+					"columnsFrom": ["profile_id"],
+					"tableTo": "profiles",
+					"columnsTo": ["id"],
+					"onUpdate": "no action",
+					"onDelete": "cascade"
+				},
+				"profile_apps_app_id_catalog_apps_id_fk": {
+					"name": "profile_apps_app_id_catalog_apps_id_fk",
+					"tableFrom": "profile_apps",
+					"columnsFrom": ["app_id"],
+					"tableTo": "catalog_apps",
+					"columnsTo": ["id"],
+					"onUpdate": "no action",
+					"onDelete": "restrict"
+				}
+			},
+			"compositePrimaryKeys": {
+				"profile_apps_profile_id_app_id_pk": {
+					"name": "profile_apps_profile_id_app_id_pk",
+					"columns": ["profile_id", "app_id"]
+				}
+			},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {
+				"profile_apps_position_nonnegative": {
+					"name": "profile_apps_position_nonnegative",
+					"value": "\"profile_apps\".\"position\" >= 0"
+				}
+			},
+			"isRLSEnabled": false
+		},
+		"public.profiles": {
+			"name": "profiles",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"slug": {
+					"name": "slug",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"policy": {
+					"name": "policy",
+					"type": "profile_policy",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"profiles_slug_key": {
+					"name": "profiles_slug_key",
+					"columns": [
+						{
+							"expression": "slug",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"with": {},
+					"method": "btree",
+					"concurrently": false
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {
+				"profiles_slug_format": {
+					"name": "profiles_slug_format",
+					"value": "\"profiles\".\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+				},
+				"profiles_name_length": {
+					"name": "profiles_name_length",
+					"value": "char_length(\"profiles\".\"name\") BETWEEN 1 AND 80"
+				},
+				"profiles_description_length": {
+					"name": "profiles_description_length",
+					"value": "\"profiles\".\"description\" IS NULL OR char_length(\"profiles\".\"description\") BETWEEN 1 AND 500"
+				}
+			},
+			"isRLSEnabled": false
+		}
+	},
+	"enums": {
+		"public.platform": {
+			"name": "platform",
+			"schema": "public",
+			"values": ["windows", "macos", "linux", "android"]
+		},
+		"public.profile_policy": {
+			"name": "profile_policy",
+			"schema": "public",
+			"values": ["install-missing", "install-and-upgrade"]
+		}
+	},
+	"schemas": {},
+	"views": {},
+	"sequences": {},
+	"roles": {},
+	"policies": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}
