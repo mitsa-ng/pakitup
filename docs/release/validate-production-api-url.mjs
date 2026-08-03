@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { isIP } from "node:net";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function normalizeHostname(hostname) {
 	const withoutIpv6Brackets =
@@ -110,6 +111,9 @@ async function main() {
 	console.log(`production API URL validated: ${url.origin}`);
 }
 
-if (import.meta.url === new URL(process.argv[1], "file:").href) {
+if (
+	process.argv[1] &&
+	fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
 	await main();
 }
