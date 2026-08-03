@@ -133,11 +133,12 @@ devices. Desktop support targets Windows, macOS, and Linux.
       diff-check passing. WinGet stays intentionally fail-closed pending a
       Windows Known Folder API resolver; Windows cross-compilation was not
       available on this macOS host.
-- [ ] Product implementation complete (production URLs, CSP, and README remain).
+- [x] Product implementation complete (production URLs, exact-origin CSP, and
+      README deployment/release instructions are in place).
 - [x] 2026-08-04 release CI hardening: the tag workflow now has one Linux
       workspace verify/Clippy gate, validates the repository `VITE_SERVER_URL`,
       and derives a release-only exact-origin Tauri CSP override for every
-      platform build. Pending the configured production variable at tag time.
+      platform build. The production repository variable is configured.
 - [ ] Verification complete.
 - [ ] Public deployment and GitHub Release complete.
 - [x] 2026-08-04 Cloudflare production bootstrap: deployed Hono and the Vite
@@ -149,7 +150,7 @@ devices. Desktop support targets Windows, macOS, and Linux.
       navigation to the seeded three-app share URL loaded through the full
       Static Assets -> Worker -> temporary Neon branch path. The repository
       variable `VITE_SERVER_URL` now points at the production Worker. Neon main
-      and the tag-triggered three-platform draft release remain pending.
+      and the tag-triggered four-platform draft release remain pending.
 - [x] 2026-08-04 deploy/release reproducibility closure: checked in a strict,
       opt-in pnpm patch for Alchemy's OAuth workers.dev subdomain read gap,
       rejected the legacy `prod` stage, and proved a clean frozen install plus
@@ -163,5 +164,16 @@ devices. Desktop support targets Windows, macOS, and Linux.
       diff-check passed. A production macOS ARM DMG was built with exact-origin
       CSP (SHA-256 `95f76fe1155bfb73d0a84b2e6d4a65a42bda573730b50d132096d8a09d74b601`)
       but was not launched because unsigned-bundle execution awaits explicit
-      confirmation. GitHub runner preflight, Neon main, release tag, and public
-      Release remain pending.
+      confirmation. Neon main, release tag, and public Release remain pending.
+- [x] 2026-08-04 four-platform runner preflight: the first manual run exposed a
+      Windows-only CLI entrypoint mismatch that exited successfully without
+      writing the release CSP config. Commit `a199cdf` compares native resolved
+      paths, passed 20 validator tests plus independent review, and the real
+      Windows runner then passed the formerly failing step. Manual run
+      `30841278680` passed the full workspace/Clippy gate, Linux x64, Windows
+      x64, macOS ARM, macOS Intel, and the exact 10-asset validator. All six
+      installers matched their published SHA-256 manifests. The manual run
+      correctly skipped draft creation; no tag or Release exists. A read-only
+      Neon recheck found main still empty and the verified temporary migration
+      branch unchanged at 4 public tables, 10 catalog apps, 34 mappings, and 0
+      profiles. Neon main application still awaits explicit approval.
