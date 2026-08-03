@@ -279,27 +279,40 @@ jobs:
               Where-Object { $_.DisplayName -like 'Pakitup*' } |
               Select-Object -First 1
           }
+          function ConvertFrom-RegistryPath($value) {
+            if (-not $value) {
+              return $null
+            }
+            $text = ([string]$value).Trim()
+            if ($text -match '^"([^"]+)"(?:,\d+)?$') {
+              return $Matches[1]
+            }
+            return ($text -replace ',\d+$', '').Trim('"')
+          }
           function Assert-PakitupInstalled {
             $entry = Get-PakitupUninstallEntry
             if (-not $entry) {
               throw "Pakitup uninstall registration was not created"
             }
-            $candidates = @()
-            if ($entry.InstallLocation) {
-              $candidates += Get-ChildItem $entry.InstallLocation -Filter 'Pakitup.exe' -File -Recurse -ErrorAction SilentlyContinue
+            $installLocation = ConvertFrom-RegistryPath $entry.InstallLocation
+            if (-not $installLocation -or -not (Test-Path -LiteralPath $installLocation -PathType Container)) {
+              throw "Installed Pakitup directory was not found"
             }
-            if ($entry.DisplayIcon) {
-              $displayIcon = $entry.DisplayIcon.Trim('"') -replace ',\d+$', ''
-              if (Test-Path $displayIcon -PathType Leaf) {
-                $candidates += Get-Item $displayIcon
-              }
+            $mainBinaryName = 'app.exe'
+            if ($entry.MainBinaryName) {
+              $mainBinaryName = ([string]$entry.MainBinaryName).Trim('"')
             }
-            if ($candidates.Count -eq 0) {
+            if ([System.IO.Path]::GetFileName($mainBinaryName) -ne $mainBinaryName) {
+              throw "Registered Pakitup binary name was not a file name"
+            }
+            $mainExecutable = Join-Path $installLocation $mainBinaryName
+            if (-not (Test-Path -LiteralPath $mainExecutable -PathType Leaf)) {
               throw "Installed Pakitup executable was not found"
             }
             return [PSCustomObject]@{
               Entry = $entry
-              Executables = @($candidates.FullName)
+              InstallLocation = $installLocation
+              Executables = @((Resolve-Path -LiteralPath $mainExecutable).Path)
             }
           }
           function Assert-InstallerExitCode($process) {
@@ -325,11 +338,14 @@ jobs:
           $nsisInstall = Start-Process -FilePath $nsis.FullName -ArgumentList '/S', '/NS' -Wait -PassThru
           Assert-InstallerExitCode $nsisInstall
           $nsisState = Assert-PakitupInstalled
-          $nsisUninstaller = Get-ChildItem $nsisState.Entry.InstallLocation -Filter 'uninstall.exe' -File -Recurse | Select-Object -First 1
-          if (-not $nsisUninstaller) {
+          if (-not $nsisState.InstallLocation) {
+            throw "NSIS install location was not registered"
+          }
+          $nsisUninstaller = Join-Path $nsisState.InstallLocation 'uninstall.exe'
+          if (-not (Test-Path -LiteralPath $nsisUninstaller -PathType Leaf)) {
             throw "NSIS uninstaller was not found"
           }
-          $nsisRemove = Start-Process -FilePath $nsisUninstaller.FullName -ArgumentList '/S' -Wait -PassThru
+          $nsisRemove = Start-Process -FilePath $nsisUninstaller -ArgumentList '/S' -Wait -PassThru
           Assert-InstallerExitCode $nsisRemove
           Assert-PakitupRemoved $nsisState
 

@@ -187,3 +187,9 @@ devices. Desktop support targets Windows, macOS, and Linux.
       assumed the display name was also the binary name; Tauri emitted the
       actual `CFBundleExecutable` as `app`. Resolve the executable from the
       copied bundle's `Info.plist` before checking its mode and architecture.
+      The same run also rejected the Windows smoke script: Tauri's quoted NSIS
+      `InstallLocation` was passed directly to a provider-dependent
+      `Get-ChildItem -File` call. Normalize registry paths, use the registered
+      `MainBinaryName` (with the current Cargo binary `app.exe` as the MSI
+      fallback), and address the known `uninstall.exe` under the normalized
+      location. Do not accept an arbitrary helper executable as proof.
