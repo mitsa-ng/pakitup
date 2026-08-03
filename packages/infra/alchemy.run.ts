@@ -2,11 +2,17 @@ import alchemy from "alchemy";
 import { RateLimit, Vite, Worker } from "alchemy/cloudflare";
 import { config } from "dotenv";
 
+import { requireCloudflareWorkersSubdomainForProduction } from "./cloudflare-workers-subdomain.ts";
+
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
 config({ path: "../../apps/server/.env" });
 
 const app = await alchemy("pakitup");
+requireCloudflareWorkersSubdomainForProduction(
+	app,
+	process.env.CLOUDFLARE_WORKERS_SUBDOMAIN,
+);
 const databaseUrl = alchemy.secret.env.DATABASE_URL;
 const corsOrigin = alchemy.env.CORS_ORIGIN;
 const rateLimitKeySecret = alchemy.secret.env.RATE_LIMIT_KEY_SECRET;

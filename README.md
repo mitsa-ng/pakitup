@@ -9,6 +9,12 @@ The first public release supports Windows, macOS, and Linux desktop installs.
 Android is a companion flow: it explains and hands off approved store installs,
 but never claims silent installation on an unmanaged phone.
 
+## Live services
+
+- [Web app](https://pakitup-web-production.xingencai060.workers.dev/)
+- [API health](https://pakitup-server-production.xingencai060.workers.dev/api/health)
+- [Desktop releases](https://github.com/mitsa-ng/pakitup/releases)
+
 ## What ships in v0.1.0
 
 - Searchable catalog with platform and category filters.
@@ -39,6 +45,7 @@ to code- and data-owned provider identifiers.
 
 - Node.js 22 or newer
 - pnpm through Corepack
+- Bun 1.3.13 for the JavaScript test suites
 - Rust stable and the platform prerequisites required by Tauri 2
 - A PostgreSQL database (Neon is used in production)
 - A Cloudflare account for deployment
@@ -141,8 +148,14 @@ Authenticate Alchemy with a Cloudflare profile, provide production values in
 the ignored environment files, and deploy a named production stage:
 
 ```bash
-ALCHEMY_STAGE=prod pnpm deploy
+cd packages/infra
+CLOUDFLARE_WORKERS_SUBDOMAIN=xingencai060 \
+  pnpm exec alchemy deploy alchemy.run.ts \
+  --stage production --env-file .env
 ```
+
+The `production` stage name is canonical. The deployment rejects the legacy
+`prod` spelling so it cannot create a second set of Workers accidentally.
 
 The deployment provisions:
 
@@ -161,9 +174,10 @@ The `desktop-release.yml` workflow runs for tags matching `v*`. It verifies
 that the tag, `Cargo.toml`, and `tauri.conf.json` versions match, runs the full
 workspace verification and Rust Clippy gate once on Linux, then builds:
 
-- Windows: NSIS and MSI
-- macOS: DMG
-- Linux: DEB and AppImage
+- Windows x64: NSIS and MSI
+- macOS Apple Silicon (`aarch64`): DMG
+- macOS Intel (`x86_64`): DMG
+- Linux x64: DEB and AppImage
 
 Before creating a tag, set the GitHub Actions **repository variable**
 `VITE_SERVER_URL` to the exact HTTPS production API URL. This is intentionally a
@@ -172,7 +186,8 @@ must not use `http`, `localhost`, credentials, a query, or a fragment. You can
 run the same validator locally (with the intended URL) before tagging:
 
 ```bash
-VITE_SERVER_URL=https://api.example.com node docs/release/validate-production-api-url.mjs
+VITE_SERVER_URL=https://pakitup-server-production.xingencai060.workers.dev \
+  node docs/release/validate-production-api-url.mjs
 pnpm release:validate-api-url
 ```
 
@@ -181,15 +196,74 @@ uses its URL origin to generate a release-only Tauri CSP override. The resulting
 production `connect-src` must contain that exact API origin rather than a broad
 `https:` source; keep the variable, deployed API origin, and CSP in sync.
 
-Tag only after the variable and production API/CORS settings have been checked,
-`pnpm verify`, Clippy, and the URL validator pass locally, and the version files
-match the intended `vX.Y.Z` tag. The workflow generates SHA-256 files and only
-creates or updates a draft GitHub Release. Review every asset and checksum, test
-on clean machines, and publish the draft manually.
+Before tagging, run the manual preflight from GitHub Actions or the CLI:
+
+```bash
+gh workflow run desktop-release.yml -f release_version=0.1.0
+```
+
+`workflow_dispatch` runs the same version check, verification, four-platform
+build matrix, checksum generation, complete asset-allowlist validation, and
+artifact upload, but it cannot create or modify a GitHub Release. Tag only after
+that preflight passes, the repository variable matches the live API above,
+production `/api/health` returns 200,
+browser and Tauri CORS origins are checked, and the version files match the
+intended `vX.Y.Z` tag.
+
+Only a pushed tag can create or update a draft GitHub Release. The workflow
+generates SHA-256 manifests and reconciles only Pakitup-managed assets from an
+older draft. Review every asset and checksum, test on clean machines, and
+publish the draft manually.
 
 v0.1.0 is unsigned. Windows SmartScreen and macOS Gatekeeper may therefore show
 an unverified-developer warning. Code signing and Apple notarization are release
 hardening work, not something this project bypasses.
+
+## Install a desktop release
+
+Download from [GitHub Releases](https://github.com/mitsa-ng/pakitup/releases).
+The filename prefix identifies the intended system and CPU:
+
+| System | Release asset |
+| --- | --- |
+| Windows 10/11 x64 | `windows-x86_64-Pakitup_0.1.0_x64-setup.exe` or the matching `.msi` |
+| macOS Apple Silicon | `macos-aarch64-Pakitup_0.1.0_aarch64.dmg` |
+| macOS Intel | `macos-x86_64-Pakitup_0.1.0_x64.dmg` |
+| Linux x64 | `linux-x86_64-Pakitup_0.1.0_amd64.deb` or the matching `.AppImage` |
+
+v0.1.0 does not include Windows ARM64 or Linux ARM64 bundles. Package-manager
+features also depend on a supported provider being available on the machine.
+
+Download the matching `<platform>-SHA256SUMS.txt` manifest. Compare the chosen
+installer's SHA-256 value with its exact manifest line before opening it:
+
+```bash
+# Linux
+sha256sum linux-x86_64-Pakitup_0.1.0_amd64.deb
+
+# macOS Apple Silicon (use the x86_64 filename for an Intel Mac)
+shasum -a 256 macos-aarch64-Pakitup_0.1.0_aarch64.dmg
+```
+
+On Windows PowerShell:
+
+```powershell
+Get-FileHash .\windows-x86_64-Pakitup_0.1.0_x64-setup.exe -Algorithm SHA256
+```
+
+After the hash matches:
+
+- Windows: open the NSIS `.exe`, or use the `.msi` where MSI deployment is
+  required.
+- macOS: open the `.dmg` and drag Pakitup to Applications.
+- Debian/Ubuntu: `sudo apt install ./linux-x86_64-Pakitup_0.1.0_amd64.deb`.
+- Other supported x64 Linux systems: mark the verified AppImage executable and
+  run it from the desktop or terminal.
+
+These v0.1.0 bundles are unsigned. Windows SmartScreen or macOS Gatekeeper may
+refuse to open them. If the operating system blocks a bundle, stop and use a
+signed future release or build the reviewed source yourself; do not disable or
+bypass platform security controls. Never proceed when a checksum differs.
 
 ## Platform behavior
 

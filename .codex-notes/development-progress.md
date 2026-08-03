@@ -140,3 +140,28 @@ devices. Desktop support targets Windows, macOS, and Linux.
       platform build. Pending the configured production variable at tag time.
 - [ ] Verification complete.
 - [ ] Public deployment and GitHub Release complete.
+- [x] 2026-08-04 Cloudflare production bootstrap: deployed Hono and the Vite
+      static SPA to `pakitup-server-production.xingencai060.workers.dev` and
+      `pakitup-web-production.xingencai060.workers.dev`. Replaced localhost
+      CORS entries with the exact public Web origin plus the three supported
+      Tauri origins. Public probes passed for root, `/api/health`, a 10-item
+      catalog, allowed-origin CORS, and denied-origin CORS. A direct Chrome
+      navigation to the seeded three-app share URL loaded through the full
+      Static Assets -> Worker -> temporary Neon branch path. The repository
+      variable `VITE_SERVER_URL` now points at the production Worker. Neon main
+      and the tag-triggered three-platform draft release remain pending.
+- [x] 2026-08-04 deploy/release reproducibility closure: checked in a strict,
+      opt-in pnpm patch for Alchemy's OAuth workers.dev subdomain read gap,
+      rejected the legacy `prod` stage, and proved a clean frozen install plus
+      a real `production` redeploy. The redeployed API health/catalog/CORS and
+      browser navigation probes returned 200. Release CI now sets up pinned Bun,
+      Rust, and Linux Tauri prerequisites; builds Linux x64, Windows x64, macOS
+      ARM, and macOS Intel; validates exactly 10 assets; offers a non-publishing
+      manual preflight; pins the Tauri build action; and permits tag drafts only
+      when the tag is the current main head. Full `pnpm verify`, Clippy, URL
+      fixtures, asset fixtures, infra tests, frozen install, YAML parse, and
+      diff-check passed. A production macOS ARM DMG was built with exact-origin
+      CSP (SHA-256 `95f76fe1155bfb73d0a84b2e6d4a65a42bda573730b50d132096d8a09d74b601`)
+      but was not launched because unsigned-bundle execution awaits explicit
+      confirmation. GitHub runner preflight, Neon main, release tag, and public
+      Release remain pending.

@@ -22,7 +22,8 @@
 		"format": "biome check --write .",
 		"test": "pnpm -r --if-present run test && cargo test --manifest-path apps/web/src-tauri/Cargo.toml",
 		"verify": "pnpm run check-types && pnpm run check && pnpm run test && pnpm run build",
-		"release:validate-api-url": "node --test docs/release/validate-production-api-url.test.mjs"
+		"release:validate-api-url": "node --test docs/release/validate-production-api-url.test.mjs",
+		"release:validate-assets": "node --test docs/release/validate-release-assets.test.mjs"
 	},
 	"dependencies": {
 		"@pakitup/env": "workspace:*",
@@ -37,5 +38,10 @@
 		"turbo": "^2.10.7",
 		"typescript": "catalog:"
 	},
-	"packageManager": "pnpm@10.33.2"
+	"packageManager": "pnpm@10.33.2",
+	"pnpm": {
+		"patchedDependencies": {
+			"alchemy@0.93.12": "patches/alchemy@0.93.12.patch"
+		}
+	}
 }

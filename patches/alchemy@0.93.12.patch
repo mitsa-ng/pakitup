@@ -1,0 +1,55 @@
+diff --git a/lib/cloudflare/worker-subdomain.js b/lib/cloudflare/worker-subdomain.js
+--- a/lib/cloudflare/worker-subdomain.js
++++ b/lib/cloudflare/worker-subdomain.js
+@@ -37,7 +37,22 @@ export async function getWorkerSubdomain(api, scriptName) {
+         throw error;
+     });
+ }
++const WORKERS_SUBDOMAIN_PATTERN = /^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u;
++function configuredWorkersSubdomain() {
++    const value = process.env.CLOUDFLARE_WORKERS_SUBDOMAIN;
++    if (value === undefined) {
++        return undefined;
++    }
++    if (!WORKERS_SUBDOMAIN_PATTERN.test(value)) {
++        throw new Error("CLOUDFLARE_WORKERS_SUBDOMAIN must be a lowercase DNS label of 1-63 letters, digits, or interior hyphens");
++    }
++    return value;
++}
+ export const getAccountSubdomain = memoize(async (api) => {
++    const configuredSubdomain = configuredWorkersSubdomain();
++    if (configuredSubdomain !== undefined) {
++        return configuredSubdomain;
++    }
+     const result = await extractCloudflareResult(`get subdomain for account ${api.accountId}`, api.get(`/accounts/${api.accountId}/workers/subdomain`));
+     return result.subdomain;
+ }, (api) => api.accountId);
+diff --git a/src/cloudflare/worker-subdomain.ts b/src/cloudflare/worker-subdomain.ts
+--- a/src/cloudflare/worker-subdomain.ts
++++ b/src/cloudflare/worker-subdomain.ts
+@@ -133,5 +133,25 @@
++const WORKERS_SUBDOMAIN_PATTERN =
++  /^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u;
++
++function configuredWorkersSubdomain(): string | undefined {
++  const value = process.env.CLOUDFLARE_WORKERS_SUBDOMAIN;
++  if (value === undefined) {
++    return undefined;
++  }
++  if (!WORKERS_SUBDOMAIN_PATTERN.test(value)) {
++    throw new Error(
++      "CLOUDFLARE_WORKERS_SUBDOMAIN must be a lowercase DNS label of 1-63 letters, digits, or interior hyphens",
++    );
++  }
++  return value;
++}
++
+ export const getAccountSubdomain = memoize(
+   async (api: CloudflareApi) => {
++    const configuredSubdomain = configuredWorkersSubdomain();
++    if (configuredSubdomain !== undefined) {
++      return configuredSubdomain;
++    }
+     const result = await extractCloudflareResult<{ subdomain: string }>(
+       `get subdomain for account ${api.accountId}`,
+       api.get(`/accounts/${api.accountId}/workers/subdomain`),
