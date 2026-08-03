@@ -1,37 +1,37 @@
 {
-  "name": "pakitup",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "type": "module",
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "check-types": "turbo run check-types",
-    "dev:web": "turbo run dev -F web",
-    "dev:server": "turbo run dev -F server",
-    "db:push": "turbo run db:push -F @pakitup/db",
-    "db:studio": "turbo run db:studio -F @pakitup/db",
-    "db:generate": "turbo run db:generate -F @pakitup/db",
-    "db:migrate": "turbo run db:migrate -F @pakitup/db",
-    "deploy": "turbo run deploy -F @pakitup/infra",
-    "destroy": "turbo run destroy -F @pakitup/infra",
-    "check": "biome check --write ."
-  },
-  "dependencies": {
-    "@pakitup/env": "workspace:*",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.6",
-    "@cloudflare/workers-types": "catalog:",
-    "@pakitup/config": "workspace:*",
-    "@types/node": "catalog:",
-    "turbo": "^2.10.7",
-    "typescript": "catalog:"
-  },
-  "packageManager": "pnpm@10.33.2"
+	"name": "pakitup",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"type": "module",
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"check-types": "turbo run check-types",
+		"dev:web": "turbo run dev -F web",
+		"dev:server": "turbo run dev -F server",
+		"db:push": "turbo run db:push -F @pakitup/db",
+		"db:studio": "turbo run db:studio -F @pakitup/db",
+		"db:generate": "turbo run db:generate -F @pakitup/db",
+		"db:migrate": "turbo run db:migrate -F @pakitup/db",
+		"deploy": "turbo run deploy -F @pakitup/infra",
+		"destroy": "turbo run destroy -F @pakitup/infra",
+		"check": "biome check --write ."
+	},
+	"dependencies": {
+		"@pakitup/env": "workspace:*",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.6",
+		"@cloudflare/workers-types": "catalog:",
+		"@pakitup/config": "workspace:*",
+		"@types/node": "catalog:",
+		"turbo": "^2.10.7",
+		"typescript": "catalog:"
+	},
+	"packageManager": "pnpm@10.33.2"
 }
