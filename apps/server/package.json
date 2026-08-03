@@ -1,0 +1,31 @@
+{
+  "name": "server",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc -b",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server"
+  },
+  "dependencies": {
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
+    "@pakitup/api": "workspace:*",
+    "@pakitup/db": "workspace:*",
+    "@pakitup/env": "workspace:*",
+    "dotenv": "catalog:",
+    "evlog": "^2.22.4",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@pakitup/config": "workspace:*",
+    "@types/node": "catalog:",
+    "alchemy": "catalog:",
+    "tsdown": "^0.22.14",
+    "typescript": "catalog:",
+    "wrangler": "^4.115.0"
+  }
+}

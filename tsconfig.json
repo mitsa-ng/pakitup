@@ -1,0 +1,3 @@
+{
+  "extends": "@pakitup/config/tsconfig.base.json"
+}
