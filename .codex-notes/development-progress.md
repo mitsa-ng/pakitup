@@ -177,3 +177,9 @@ devices. Desktop support targets Windows, macOS, and Linux.
       Neon recheck found main still empty and the verified temporary migration
       branch unchanged at 4 public tables, 10 catalog apps, 34 mappings, and 0
       profiles. Neon main application still awaits explicit approval.
+- [ ] 2026-08-04 clean-runner installer preflight: install and remove the Linux
+      DEB, Windows NSIS/MSI, and mounted macOS DMGs on fresh GitHub-hosted
+      runners; structurally extract the Linux AppImage; verify installed
+      executables and architecture; then require every platform bundle plus the
+      exact 10-asset validator to pass at the current `main` SHA. No tag or
+      public GitHub Release may be created by this manual preflight.

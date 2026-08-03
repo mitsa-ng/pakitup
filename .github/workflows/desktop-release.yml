@@ -188,6 +188,155 @@ jobs:
           projectPath: apps/web
           args: ${{ matrix.target_args }} --config src-tauri/tauri.release.conf.json --bundles ${{ matrix.bundles }}
 
+      - name: Smoke-test Linux installers on the clean runner
+        if: matrix.platform == 'linux-x86_64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          deb="$(find '${{ matrix.bundle_dir }}/deb' -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          appimage="$(find '${{ matrix.bundle_dir }}/appimage' -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$deb"
+          test -n "$appimage"
+          deb="$(realpath "$deb")"
+          appimage="$(realpath "$appimage")"
+
+          package_name="$(dpkg-deb -f "$deb" Package)"
+          sudo apt-get install --no-install-recommends -y "$deb"
+          dpkg-query -W -f='${Status}\n' "$package_name" | grep -qx 'install ok installed'
+          mapfile -t installed_executables < <(
+            dpkg-query -L "$package_name" | while IFS= read -r path; do
+              if [[ -f "$path" && -x "$path" ]]; then
+                printf '%s\n' "$path"
+              fi
+            done
+          )
+          test "${#installed_executables[@]}" -gt 0
+          sudo apt-get remove -y "$package_name"
+
+          extract_dir="$(mktemp -d "$RUNNER_TEMP/pakitup-appimage.XXXXXX")"
+          (
+            cd "$extract_dir"
+            "$appimage" --appimage-extract >/dev/null
+          )
+          test -x "$extract_dir/squashfs-root/AppRun"
+
+      - name: Smoke-test macOS installer on the clean runner
+        if: startsWith(matrix.platform, 'macos-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmg="$(find '${{ matrix.bundle_dir }}/dmg' -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          test -n "$dmg"
+          mount_dir="$RUNNER_TEMP/pakitup-dmg-${{ matrix.platform }}"
+          install_dir="$RUNNER_TEMP/pakitup-installed-${{ matrix.platform }}"
+          mkdir -p "$mount_dir" "$install_dir"
+          attached=0
+          cleanup() {
+            if [[ "$attached" == 1 ]]; then
+              hdiutil detach "$mount_dir"
+            fi
+          }
+          trap cleanup EXIT
+
+          hdiutil attach "$dmg" -readonly -nobrowse -mountpoint "$mount_dir"
+          attached=1
+          app="$(find "$mount_dir" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$app"
+          ditto "$app" "$install_dir/Pakitup.app"
+          test -f "$install_dir/Pakitup.app/Contents/Info.plist"
+          executable="$install_dir/Pakitup.app/Contents/MacOS/Pakitup"
+          test -x "$executable"
+          plutil -lint "$install_dir/Pakitup.app/Contents/Info.plist"
+          if [[ '${{ matrix.platform }}' == 'macos-aarch64' ]]; then
+            file "$executable" | grep -q 'arm64'
+          else
+            file "$executable" | grep -q 'x86_64'
+          fi
+          hdiutil detach "$mount_dir"
+          attached=0
+
+      - name: Smoke-test Windows installers on the clean runner
+        if: matrix.platform == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $nsis = Get-ChildItem '${{ matrix.bundle_dir }}/nsis' -Filter '*-setup.exe' | Select-Object -First 1
+          $msi = Get-ChildItem '${{ matrix.bundle_dir }}/msi' -Filter '*.msi' | Select-Object -First 1
+          if (-not $nsis -or -not $msi) {
+            throw "Expected NSIS and MSI installers"
+          }
+
+          $uninstallPaths = @(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          function Get-PakitupUninstallEntry {
+            Get-ItemProperty $uninstallPaths -ErrorAction SilentlyContinue |
+              Where-Object { $_.DisplayName -like 'Pakitup*' } |
+              Select-Object -First 1
+          }
+          function Assert-PakitupInstalled {
+            $entry = Get-PakitupUninstallEntry
+            if (-not $entry) {
+              throw "Pakitup uninstall registration was not created"
+            }
+            $candidates = @()
+            if ($entry.InstallLocation) {
+              $candidates += Get-ChildItem $entry.InstallLocation -Filter 'Pakitup.exe' -File -Recurse -ErrorAction SilentlyContinue
+            }
+            if ($entry.DisplayIcon) {
+              $displayIcon = $entry.DisplayIcon.Trim('"') -replace ',\d+$', ''
+              if (Test-Path $displayIcon -PathType Leaf) {
+                $candidates += Get-Item $displayIcon
+              }
+            }
+            if ($candidates.Count -eq 0) {
+              throw "Installed Pakitup executable was not found"
+            }
+            return [PSCustomObject]@{
+              Entry = $entry
+              Executables = @($candidates.FullName)
+            }
+          }
+          function Assert-InstallerExitCode($process) {
+            if ($process.ExitCode -notin @(0, 3010)) {
+              throw "Installer exited with code $($process.ExitCode)"
+            }
+          }
+          function Assert-PakitupRemoved($state) {
+            if (Get-PakitupUninstallEntry) {
+              throw "Pakitup uninstall registration remains"
+            }
+            foreach ($executable in $state.Executables) {
+              if (Test-Path $executable -PathType Leaf) {
+                throw "Pakitup executable remains after uninstall: $executable"
+              }
+            }
+          }
+
+          if (Get-PakitupUninstallEntry) {
+            throw "Runner was not clean before installer smoke test"
+          }
+
+          $nsisInstall = Start-Process -FilePath $nsis.FullName -ArgumentList '/S', '/NS' -Wait -PassThru
+          Assert-InstallerExitCode $nsisInstall
+          $nsisState = Assert-PakitupInstalled
+          $nsisUninstaller = Get-ChildItem $nsisState.Entry.InstallLocation -Filter 'uninstall.exe' -File -Recurse | Select-Object -First 1
+          if (-not $nsisUninstaller) {
+            throw "NSIS uninstaller was not found"
+          }
+          $nsisRemove = Start-Process -FilePath $nsisUninstaller.FullName -ArgumentList '/S' -Wait -PassThru
+          Assert-InstallerExitCode $nsisRemove
+          Assert-PakitupRemoved $nsisState
+
+          $msiInstall = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$($msi.FullName)`" /quiet /norestart" -Wait -PassThru
+          Assert-InstallerExitCode $msiInstall
+          $msiState = Assert-PakitupInstalled
+          $msiRemove = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/x `"$($msi.FullName)`" /quiet /norestart" -Wait -PassThru
+          Assert-InstallerExitCode $msiRemove
+          Assert-PakitupRemoved $msiState
+
       - name: Stage bundles and checksums
         run: >-
           node docs/release/generate-checksums.mjs
