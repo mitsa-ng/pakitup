@@ -22,30 +22,30 @@ devices. Desktop support targets Windows, macOS, and Linux.
 
 ## Public v1 acceptance criteria
 
-- [ ] Responsive public catalog with search, filters, provider/platform support,
+- [x] Responsive public catalog with search, filters, provider/platform support,
       integrity/source information, and accessible keyboard/touch interactions.
-- [ ] Profile builder can select apps, choose an installation policy, persist a
+- [x] Profile builder can select apps, choose an installation policy, persist a
       profile through the API, and produce a stable share URL.
-- [ ] Hono Worker exposes health, catalog, profile read/write, and desktop plan
+- [x] Hono Worker exposes health, catalog, profile read/write, and desktop plan
       endpoints with validation, rate/error handling, exact-origin CORS, and no
       arbitrary shell command or arbitrary download URL input.
-- [ ] Neon schema, migration, and seed data are reproducible and verified against
+- [x] Neon schema, migration, and seed data are reproducible and verified against
       the deployed database.
-- [ ] Tauri desktop client can import a shared profile, detect the current
+- [x] Tauri desktop client can import a shared profile, detect the current
       platform, show the exact commands/actions, require confirmation, execute
       allowlisted providers, stream results, and never interpolate raw user input
       into a shell.
-- [ ] Supported desktop providers: winget (Windows), Homebrew (macOS), and an
+- [x] Supported desktop providers: winget (Windows), Homebrew (macOS), and an
       explicit Linux provider adapter (apt, dnf, or Flatpak according to detected
       availability). Unsupported apps are reported rather than guessed.
-- [ ] Android companion route provides Play Store intents/manual confirmation and
+- [x] Android companion route provides Play Store intents/manual confirmation and
       clearly documents managed-device requirements for unattended deployment.
-- [ ] Local typecheck, lint, tests, production builds, browser E2E, and a fresh-
+- [x] Local typecheck, lint, tests, production builds, browser E2E, and a fresh-
       context security/completion review pass.
-- [ ] Public web and API URLs are deployed to Cloudflare, production API uses Neon,
+- [x] Public web and API URLs are deployed to Cloudflare, production API uses Neon,
       and a public GitHub Release contains versioned Windows/macOS/Linux desktop
       artifacts plus checksums and release notes.
-- [ ] README contains local setup, environment variables, database migration,
+- [x] README contains local setup, environment variables, database migration,
       deployment, platform limitations, and release instructions.
 
 ## Safety invariants
@@ -60,7 +60,7 @@ devices. Desktop support targets Windows, macOS, and Linux.
 
 ## Progress
 
-- [ ] 2026-08-03 scope clarification: the core v1 journey must continue from a
+- [x] 2026-08-03 scope clarification: the core v1 journey must continue from a
       web-selected profile into the Tauri client and let the user review,
       confirm, and execute installation of those catalog apps. A browser-only
       dry-run is not an acceptable final journey.
@@ -139,8 +139,8 @@ devices. Desktop support targets Windows, macOS, and Linux.
       workspace verify/Clippy gate, validates the repository `VITE_SERVER_URL`,
       and derives a release-only exact-origin Tauri CSP override for every
       platform build. The production repository variable is configured.
-- [ ] Verification complete.
-- [ ] Public deployment and GitHub Release complete.
+- [x] Verification complete.
+- [x] Public deployment and GitHub Release complete.
 - [x] 2026-08-04 Cloudflare production bootstrap: deployed Hono and the Vite
       static SPA to `pakitup-server-production.xingencai060.workers.dev` and
       `pakitup-web-production.xingencai060.workers.dev`. Replaced localhost
@@ -177,7 +177,7 @@ devices. Desktop support targets Windows, macOS, and Linux.
       Neon recheck found main still empty and the verified temporary migration
       branch unchanged at 4 public tables, 10 catalog apps, 34 mappings, and 0
       profiles. Neon main application still awaits explicit approval.
-- [ ] 2026-08-04 clean-runner installer preflight: install and remove the Linux
+- [x] 2026-08-04 clean-runner installer preflight: install and remove the Linux
       DEB, Windows NSIS/MSI, and mounted macOS DMGs on fresh GitHub-hosted
       runners; structurally extract the Linux AppImage; verify installed
       executables and architecture; then require every platform bundle plus the
@@ -193,3 +193,26 @@ devices. Desktop support targets Windows, macOS, and Linux.
       `MainBinaryName` (with the current Cargo binary `app.exe` as the MSI
       fallback), and address the known `uninstall.exe` under the normalized
       location. Do not accept an arbitrary helper executable as proof.
+      The corrected current-main run `30845130263` passed at commit `3e43cce`:
+      workspace verification, Clippy, all four platform jobs, clean-runner smoke
+      for six installers, and the exact 10-asset validator all succeeded.
+- [x] 2026-08-04 Neon main migration and production cutover: completed migration
+      `fab16ef4-9790-4362-8a85-f11f6111be07` on main branch
+      `br-green-queen-avuggbop` and deleted its temporary branch
+      `br-icy-dew-avsr6it2`. Production main contains four public tables, 10
+      catalog apps, and 34 provider mappings. After the Worker secret cutover,
+      the public Browser -> Cloudflare Static Assets -> Hono Worker -> Neon main
+      flow created and read profile
+      `pakitup-v0-1-0-release-smoke-test-d60676ce5b` with three apps, while a
+      profile unique to the old branch was no longer available through the
+      Worker. The older non-default bootstrap branch `br-long-heart-avc4ivm4`
+      remains outside this migration cleanup and is not production-bound.
+- [x] 2026-08-04 public v0.1.0 release: annotated tag `v0.1.0` points to tested
+      commit `3e43cce`. Tag run `30868433544` passed all eight jobs, including
+      four platform builds, installer smoke tests, exact asset-set validation,
+      and draft creation. The public, non-prerelease GitHub Release contains
+      exactly 10 assets; all six installers matched the four SHA-256 manifests.
+      `releases/latest` resolves to v0.1.0, the public SPA deep link renders on a
+      browser navigation request, and the production page links to that latest
+      Release. A fresh-context requirement-to-evidence audit passed 7/7 with no
+      public-release blocker.
